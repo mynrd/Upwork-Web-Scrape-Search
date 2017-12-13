@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<div class="row" style="margin-top: 50px;">
+    <div class="form-horizontal">
+        <div class="form-group">
+            <label class="col-md-2">Search Keyword</label>
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="search" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary" type="button" onclick="search()">Search</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-12" id="uw-result"></div>
+        </div>
+    </div>
+</div>
+
+<div id="template" style="display:none">
+    <div>
+        <div class="uw-header">{{header}}</div>
+        <div class="uw-info">{{jobtype}} - {{contractorlevel}} - {{budget}}</div>
+        <div class="uw-description">{{description}}</div>
+        <hr />
+    </div>
+</div>
+
+<script type="text/javascript">
+    function search() {
+        $.ajax({
+            type: "post",
+            url: "@Url.Action("GetData")",
+            data: { search: $("#search").val(), pageToShow: 2 },
+            success: function (result) {
+                if (result.success) {
+                    $("#uw-result").empty();
+
+                    $.each(result.data, function (i, item) {
+                        var data = $("#template").html();
+
+                        data = data.replace("{{header}}", item.Header);
+                        data = data.replace("{{jobtype}}", item.JobType);
+                        data = data.replace("{{contractorlevel}}", item.ContractorLevel);
+                        data = data.replace("{{budget}}", item.Budget);
+
+                        var htmlData = $(data);
+                        $(".uw-description", htmlData).empty();
+                        $(".uw-description", htmlData).append(item.Description);
+
+                        $("#uw-result").append(htmlData);
+
+                    });
+                }
+            }
+        })
+    }
+</script>
