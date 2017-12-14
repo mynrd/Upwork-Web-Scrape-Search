@@ -2,25 +2,35 @@
     ViewData["Title"] = "Home Page";
 }
 <div class="row" style="margin-top: 50px;">
-    <div class="form-horizontal">
-        <div class="form-group">
-            <label class="col-md-2">Search Keyword</label>
-            <div class="col-md-6">
-                <input type="text" class="form-control" id="search" />
+    <div class="col-md-12">
+        <div class="form-horizontal">
+            <div class="form-group">
+                <label class="col-md-2">Search Keyword</label>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="search" />
+                </div>
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary" type="button" onclick="search()">Search</button>
+            <div class="form-group">
+                <label class="col-md-2">How Many Page?</label>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" id="pageNumber" value="1" min="1" />
+                </div>
             </div>
-        </div>
-        <div class="form-group">
-            <div class="col-md-12" id="uw-result"></div>
+            <div class="form-group">
+                <div class="col-md-push-2 col-md-10">
+                    <button class="btn btn-primary" type="button" onclick="search()" id="btn-search">Search</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-12" id="uw-result"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <div id="template" style="display:none">
     <div>
-        <div class="uw-header">{{header}}</div>
+        <div class="uw-header"><a href="{{url}}" target="_blank">{{header}}</a></div>
         <div class="uw-info">{{jobtype}} - {{contractorlevel}} - {{budget}}</div>
         <div class="uw-description">{{description}}</div>
         <hr />
@@ -29,21 +39,36 @@
 
 <script type="text/javascript">
     function search() {
+        $("#btn-search").attr("disabled", "disabled");
+        $("#uw-result").empty();
+
+        var pageToShow = $("#pageNumber").val();
+        if (pageToShow == 0) pageToShow = 1;
+
+        loadData(1, pageToShow);
+    }
+
+    function loadData(page, stopPage) {
+        if (page > stopPage) {
+            $("#btn-search").removeAttr("disabled", "disabled");
+            return;
+        }
+
         $.ajax({
             type: "post",
             url: "@Url.Action("GetData")",
-            data: { search: $("#search").val(), pageToShow: 2 },
+            data: { search: $("#search").val(), pageToShow: page },
             success: function (result) {
                 if (result.success) {
-                    $("#uw-result").empty();
-
                     $.each(result.data, function (i, item) {
                         var data = $("#template").html();
 
-                        data = data.replace("{{header}}", item.Header);
-                        data = data.replace("{{jobtype}}", item.JobType);
-                        data = data.replace("{{contractorlevel}}", item.ContractorLevel);
-                        data = data.replace("{{budget}}", item.Budget);
+                        data = data
+                            .replace("{{url}}", item.Url)
+                            .replace("{{header}}", item.Header)
+                            .replace("{{jobtype}}", item.JobType)
+                            .replace("{{contractorlevel}}", item.ContractorLevel)
+                            .replace("{{budget}}", item.Budget);
 
                         var htmlData = $(data);
                         $(".uw-description", htmlData).empty();
@@ -52,6 +77,13 @@
                         $("#uw-result").append(htmlData);
 
                     });
+                    if (result.hasPaging == true) {
+                        loadData(page + 1, stopPage);
+                    }
+                    else {
+                        $("#btn-search").removeAttr("disabled", "disabled");
+                    }
+
                 }
             }
         })

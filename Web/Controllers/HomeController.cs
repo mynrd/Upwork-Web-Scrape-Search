@@ -27,66 +27,48 @@ namespace Web.Controllers
 
             var q = HttpUtility.UrlEncode(search);
             var model = new List<SearchResultModel>();
-            int totalCountLoop = 0;
-            for (int i = 0; i < pageToShow; i++)
+            string url = $"https://www.upwork.com/o/jobs/browse/?page={(pageToShow.Value + 1)}&q={q}";
+            var web = new HtmlWeb();
+            var doc = await Task.Factory.StartNew(() => web.Load(url));
+            var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"jobs-list\"]//section");
+
+            foreach (var node in nodes)
             {
-                totalCountLoop++;
-                string url = $"https://www.upwork.com/o/jobs/browse/?page={(i + 1)}&q={q}";
-                var web = new HtmlWeb();
-                var doc = await Task.Factory.StartNew(() => web.Load(url));
-                var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"jobs-list\"]//section");
+                var jobUrl = doc.DocumentNode.SelectNodes(node.XPath + "//div[1]//div//h4//a")
+                    .Select(x => { try { return x.Attributes["href"].Value; } catch { return ""; } }).FirstOrDefault();
 
-                foreach (var node in nodes)
+                var header = GetInnerText(doc.DocumentNode, node.XPath + "//div//div//h4//a");
+                var jobType = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//strong[contains(@class,\"js-type\")]");
+                var contractorLevel = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-contractor-tier\")]");
+                var budget = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-budget\")]");
+                var postedDuration = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-duration\")]");
+                var description = doc.DocumentNode.SelectNodes(node.XPath + "//div[2]//div//div[2]").Select(x => { try { return x.Attributes["data-ng-init"].Value; } catch { return ""; } }).FirstOrDefault();
+                description = description.Replace("jobDescriptionController.description = ", "");
+                description = StripHTML(description)
+                        .Replace("\\n", " ")
+                        .Replace("\\r", " ")
+                        .Replace("\\u2022", "•")
+                        .Replace("\\t", " ");
+                model.Add(new SearchResultModel()
                 {
-                    var header = GetInnerText(doc.DocumentNode, node.XPath + "//div//div//h4//a");
-                    var jobType = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//strong[contains(@class,\"js-type\")]");
-                    var contractorLevel = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-contractor-tier\")]");
-                    var budget = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-budget\")]");
-                    var postedDuration = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-duration\")]");
-                    //var description = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//span[1]//span");
-                    var description = doc.DocumentNode.SelectNodes(node.XPath + "//div[2]//div//div[2]").Select(x => { try { return x.Attributes["data-ng-init"].Value; } catch { return ""; } }).FirstOrDefault();
-                    //var description = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//div[2]//div//span[1]//span");
-
-                    //description = DecodeEncodedNonAsciiCharacters();
-                    description = description.Replace("jobDescriptionController.description = ", "");
-                    //description = description.Replace("\n", " ");
-
-                    //if (description.Length > 150)
-                    //{
-                    //    description = description.Substring(0, 149);
-                    //}
-                    description = StripHTML(description)
-                            .Replace("\\n", " ")
-                            .Replace("\\r", " ")
-                            .Replace("\\t", " ");
-                    model.Add(new SearchResultModel()
-                    {
-                        Header = header,
-                        ContractorLevel = contractorLevel,
-                        JobType = jobType,
-                        Budget = budget,
-                        Description = description,
-                        PostedDuration = postedDuration,
-                    });
-                }
-
-                try
-                {
-                    var nodePaging = doc.DocumentNode.SelectNodes("//*[@id=\"jobs-list\"]/footer/div/ul[contains(@class, \"pagination\")]");
-
-                    if (!nodePaging.Any())
-                    {
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    break;
-                }
-
+                    Url = "https://www.upwork.com" + jobUrl,
+                    Header = header,
+                    ContractorLevel = contractorLevel,
+                    JobType = jobType,
+                    Budget = budget,
+                    Description = description,
+                    PostedDuration = postedDuration,
+                });
             }
+            var hasPaging = false;
+            try
+            {
+                var nodePaging = doc.DocumentNode.SelectNodes("//*[@id=\"jobs-list\"]/footer/div/ul[contains(@class, \"pagination\")]");
+                hasPaging = nodePaging.Any();
+            }
+            catch { }
 
-            return Json(new { success = true, data = model, totalCountLoop });
+            return Json(new { success = true, data = model, hasPaging });
         }
 
         public string StripHTML(string input)
