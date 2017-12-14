@@ -30,8 +30,14 @@
 
 <div id="template" style="display:none">
     <div>
-        <div class="uw-header"><a href="{{url}}" target="_blank">{{header}}</a></div>
-        <div class="uw-info">{{jobtype}} - {{contractorlevel}} - {{budget}}</div>
+        <div class="uw-header"><strong><a href="{{url}}" target="_blank">{{header}}</a></strong></div>
+        <div class="uw-info">
+            {{info}}
+            @*{{jobtype}}
+            {{contractorlevel}}
+            {{budget}}
+            {{duration}}*@
+        </div>
         <div class="uw-description">{{description}}</div>
         <hr />
     </div>
@@ -63,12 +69,20 @@
                     $.each(result.data, function (i, item) {
                         var data = $("#template").html();
 
+
+                        var arr = [];
+
+                        if (item.JobType != "") arr.push("<b>JobType:</b> " + item.JobType);
+                        if (item.ContractorLevel != "") arr.push("<b>Contractor Level:</b> " + item.ContractorLevel);
+                        if (item.Duration != "") arr.push("<b>Duration:</b> " + item.Duration);
+                        if (item.Posted != "") arr.push("<b>Posted:</b> " + item.Posted );
+                        if (item.Budget != "") arr.push("<b>Budget:</b> " + item.Budget);
+                        
                         data = data
                             .replace("{{url}}", item.Url)
                             .replace("{{header}}", item.Header)
                             .replace("{{jobtype}}", item.JobType)
-                            .replace("{{contractorlevel}}", item.ContractorLevel)
-                            .replace("{{budget}}", item.Budget);
+                            .replace("{{info}}", arr.join('<br/>'));
 
                         var htmlData = $(data);
                         $(".uw-description", htmlData).empty();

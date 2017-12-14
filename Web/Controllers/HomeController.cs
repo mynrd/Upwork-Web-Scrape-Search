@@ -37,12 +37,14 @@ namespace Web.Controllers
                 var jobUrl = doc.DocumentNode.SelectNodes(node.XPath + "//div[1]//div//h4//a")
                     .Select(x => { try { return x.Attributes["href"].Value; } catch { return ""; } }).FirstOrDefault();
 
-                var header = GetInnerText(doc.DocumentNode, node.XPath + "//div//div//h4//a");
-                var jobType = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//strong[contains(@class,\"js-type\")]");
-                var contractorLevel = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-contractor-tier\")]");
-                var budget = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-budget\")]");
-                var postedDuration = GetInnerText(doc.DocumentNode, node.XPath + "//div[2]//div//small[1]//span[contains(@class,\"js-duration\")]");
-                var description = doc.DocumentNode.SelectNodes(node.XPath + "//div[2]//div//div[2]").Select(x => { try { return x.Attributes["data-ng-init"].Value; } catch { return ""; } }).FirstOrDefault();
+                var header = GetInnerText(doc.DocumentNode, node.XPath + "/div/div/h4/a");
+                var jobType = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/strong[contains(@class,\"js-type\")]");
+                var contractorLevel = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/span[contains(@class,\"js-contractor-tier\")]");
+                var budget = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/span[contains(@class,\"js-budget\")]");
+                var duration = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/span[contains(@class,\"js-duration\")]");
+                var posted = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/span[contains(@class,\"js-posted\")]");
+                var time = GetInnerText(doc.DocumentNode, node.XPath + "/div[2]/div/small[1]/span[contains(@class,\"js-posted\")]/time");
+                var description = doc.DocumentNode.SelectNodes(node.XPath + "/div[2]/div/div[2]").Select(x => { try { return x.Attributes["data-ng-init"].Value; } catch { return ""; } }).FirstOrDefault();
                 description = description.Replace("jobDescriptionController.description = ", "");
                 description = StripHTML(description)
                         .Replace("\\n", " ")
@@ -57,7 +59,8 @@ namespace Web.Controllers
                     JobType = jobType,
                     Budget = budget,
                     Description = description,
-                    PostedDuration = postedDuration,
+                    Duration = duration,
+                    Posted = time,
                 });
             }
             var hasPaging = false;
